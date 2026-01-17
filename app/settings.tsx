@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Slider from '@react-native-community/slider';
 import { GlassCard } from '../components/common/GlassCard';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -19,6 +19,7 @@ import { useConversationStore } from '../stores/conversationStore';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 
 export default function SettingsScreen() {
+  const navigation = useNavigation();
   const {
     voiceEnabled,
     voiceSpeed,
@@ -30,6 +31,14 @@ export default function SettingsScreen() {
   } = useSettingsStore();
 
   const { clearAllConversations } = useConversationStore();
+
+  const goBack = () => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  };
 
   const handleClearData = () => {
     Alert.alert(
@@ -53,7 +62,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.closeButton} onPress={goBack}>
           <Ionicons name="close" size={24} color={COLORS.secondary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>

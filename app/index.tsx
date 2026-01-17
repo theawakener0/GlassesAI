@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { CameraView } from '../components/Camera/CameraView';
 import { HUDOverlay } from '../components/HUD/HUDOverlay';
 import { CaptureButton } from '../components/HUD/CaptureButton';
@@ -16,7 +16,7 @@ import { COLORS } from '../utils/constants';
 export default function MainScreen() {
   const [capturedImage, setCapturedImage] = useState<CapturedImage | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const {
     cameraRef,
@@ -70,48 +70,36 @@ export default function MainScreen() {
     if (isListening) {
       // Stop recording
       setIsListening(false);
-      if (recording) {
-        try {
-          await recording.stopAndUnloadAsync();
-          const uri = recording.getURI();
-          // In a real app, you would send this to a speech-to-text service
-          // For now, we'll show an alert that STT would process this
-          Alert.alert(
-            'Speech Recorded',
-            'In production, this audio would be sent to a speech-to-text service. For demo purposes, please type your message.',
-            [{ text: 'OK' }]
-          );
-        } catch (error) {
-          console.error('Error stopping recording:', error);
-        }
-        setRecording(null);
+      try {
+        await audioRecorder.stop();
+        const uri = audioRecorder.uri;
+        // In a real app, you would send this to a speech-to-text service
+        // For now, we'll show an alert that STT would process this
+        Alert.alert(
+          'Speech Recorded',
+          'In production, this audio would be sent to a speech-to-text service. For demo purposes, please type your message.',
+          [{ text: 'OK' }]
+        );
+      } catch (error) {
+        console.error('Error stopping recording:', error);
       }
     } else {
       // Start recording
       try {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
+        const status = await AudioModule.requestRecordingPermissionsAsync();
+        if (!status.granted) {
           Alert.alert('Permission Required', 'Microphone permission is needed for voice input.');
           return;
         }
 
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const { recording: newRecording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-        
-        setRecording(newRecording);
+        await audioRecorder.record();
         setIsListening(true);
       } catch (error) {
         console.error('Error starting recording:', error);
         Alert.alert('Error', 'Failed to start recording. Please try again.');
       }
     }
-  }, [isListening, recording]);
+  }, [isListening, audioRecorder]);
 
   const messages = currentConversation?.messages || [];
 

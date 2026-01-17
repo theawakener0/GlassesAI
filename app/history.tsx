@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { GlassCard } from '../components/common/GlassCard';
 import { useConversationStore } from '../stores/conversationStore';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../utils/constants';
@@ -17,6 +17,7 @@ import { formatTimestamp, truncateText } from '../utils/imageUtils';
 import { Conversation } from '../types';
 
 export default function HistoryScreen() {
+  const navigation = useNavigation();
   const {
     conversations,
     loadConversation,
@@ -25,9 +26,17 @@ export default function HistoryScreen() {
     startNewConversation,
   } = useConversationStore();
 
+  const goBack = () => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  };
+
   const handleSelectConversation = (conversation: Conversation) => {
     loadConversation(conversation.id);
-    router.back();
+    goBack();
   };
 
   const handleDeleteConversation = (id: string) => {
@@ -62,7 +71,7 @@ export default function HistoryScreen() {
 
   const handleNewConversation = () => {
     startNewConversation();
-    router.back();
+    goBack();
   };
 
   const renderConversation = ({ item }: { item: Conversation }) => {
@@ -109,7 +118,7 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.closeButton} onPress={goBack}>
           <Ionicons name="close" size={24} color={COLORS.secondary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>History</Text>
